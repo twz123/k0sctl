@@ -1,6 +1,9 @@
 package cluster
 
 import (
+	"fmt"
+	"io/ioutil"
+	"path"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -9,57 +12,36 @@ import (
 
 func TestPermStringUnmarshalWithOctal(t *testing.T) {
 	u := UploadFile{}
-	yml := []byte(`
-src: /tmp
-dstDir: /tmp
-perm: 0755
-`)
+	tmp := t.TempDir()
+	ioutil.WriteFile(path.Join(tmp, "foo"), []byte("bar"), 0666)
 
-	require.NoError(t, yaml.Unmarshal(yml, &u))
-	require.Equal(t, "0755", u.PermString)
-}
+	makeYaml := func(perm string) []byte {
+		return []byte(fmt.Sprintf(`
+src: %s
+dstDir: %s
+perm: %s
+`, tmp, tmp, perm))
+	}
 
-func TestPermStringUnmarshalWithString(t *testing.T) {
-	u := UploadFile{}
-	yml := []byte(`
-src: /tmp
-dstDir: /tmp
-perm: "0755"
-`)
+	for _, test := range []struct{ name, perm string }{
+		{"withOctal", "0755"},
+		{"withString", `"0755"`},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			yml := makeYaml(test.perm)
+			require.NoError(t, yaml.Unmarshal(yml, &u))
+			require.Equal(t, "0755", u.PermString)
+		})
+	}
 
-	require.NoError(t, yaml.Unmarshal(yml, &u))
-	require.Equal(t, "0755", u.PermString)
-}
-
-func TestPermStringUnmarshalWithInvalidString(t *testing.T) {
-	u := UploadFile{}
-	yml := []byte(`
-src: /tmp
-dstDir: /tmp
-perm: u+rwx
-`)
-
-	require.Error(t, yaml.Unmarshal(yml, &u))
-}
-
-func TestPermStringUnmarshalWithInvalidNumber(t *testing.T) {
-	u := UploadFile{}
-	yml := []byte(`
-src: /tmp
-dstDir: /tmp
-perm: 0800
-`)
-
-	require.Error(t, yaml.Unmarshal(yml, &u))
-}
-
-func TestPermStringUnmarshalWithZero(t *testing.T) {
-	u := UploadFile{}
-	yml := []byte(`
-src: /tmp
-dstDir: /tmp
-perm: 0
-`)
-
-	require.Error(t, yaml.Unmarshal(yml, &u))
+	for _, test := range []struct{ name, perm string }{
+		{"withInvalidString", "u+rwx"},
+		{"withInvalidNumber", "0800"},
+		{"withZero", "0"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			yml := makeYaml(test.perm)
+			require.Error(t, yaml.Unmarshal(yml, &u))
+		})
+	}
 }
