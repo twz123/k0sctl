@@ -6,6 +6,7 @@ import (
 
 	"github.com/k0sproject/k0sctl/pkg/apis/k0sctl.k0sproject.io/v1beta1"
 	"github.com/k0sproject/k0sctl/pkg/apis/k0sctl.k0sproject.io/v1beta1/cluster"
+	k0sctl_version "github.com/k0sproject/k0sctl/version"
 	"github.com/k0sproject/rig/exec"
 	"github.com/k0sproject/version"
 	log "github.com/sirupsen/logrus"
@@ -80,8 +81,21 @@ func (p *UploadBinaries) uploadBinary(h *cluster.Host) error {
 	}
 
 	uploadedVersion, err := h.Configurer.K0sBinaryVersion(h)
-	if err != nil {
-		return fmt.Errorf("failed to get uploaded k0s binary version: %w", err)
+	if k0sctl_version.IsMalformed(err) {
+		var version string
+		if c := p.Config; c != nil {
+			if s := c.Spec; s != nil {
+				if k := s.K0s; k != nil {
+					version = k.Version
+				}
+			}
+		}
+
+		log.Warnf("%s: k0s reports an invalid version (%s), assuming %q", h, err.Error(), version)
+		h.Metadata.K0sBinaryVersion = version
+		return nil
+	} else if err != nil {
+		return fmt.Errorf("failed to get uploaded k0s binary version on host %s: %w", h, err)
 	}
 
 	h.Metadata.K0sBinaryVersion = uploadedVersion.String()

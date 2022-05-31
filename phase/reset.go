@@ -7,6 +7,7 @@ import (
 	"github.com/Masterminds/semver"
 	"github.com/k0sproject/k0sctl/pkg/apis/k0sctl.k0sproject.io/v1beta1"
 	"github.com/k0sproject/k0sctl/pkg/apis/k0sctl.k0sproject.io/v1beta1/cluster"
+	"github.com/k0sproject/k0sctl/version"
 	"github.com/k0sproject/rig/exec"
 	log "github.com/sirupsen/logrus"
 )
@@ -33,7 +34,7 @@ func (p *Reset) Prepare(config *v1beta1.Cluster) error {
 	for _, h := range hosts {
 		running, err := semver.NewVersion(h.Metadata.K0sBinaryVersion)
 		if err != nil {
-			return err
+			return version.Malformed(err)
 		}
 
 		if c.Check(running) {
@@ -67,8 +68,6 @@ func (p *Reset) Run() error {
 
 		log.Infof("%s: running k0s reset", h)
 		out, err := h.ExecOutput(h.Configurer.K0sCmdf("reset"), exec.Sudo(h))
-		c, _ := semver.NewConstraint("<= 1.22.3+k0s.0")
-		running, _ := semver.NewVersion(h.Metadata.K0sBinaryVersion)
 
 		if dErr := h.Configurer.DeleteFile(h, h.Configurer.K0sConfigPath()); dErr != nil {
 			log.Warnf("%s: failed to remove existing configuration %s: %s", h, h.Configurer.K0sConfigPath(), dErr)
@@ -76,8 +75,11 @@ func (p *Reset) Run() error {
 
 		if err != nil {
 			log.Warnf("%s: k0s reported failure: %v", h, err)
-			if c.Check(running) && strings.Contains(out, "k0s cleanup operations done") {
-				return nil
+			if version, err := semver.NewVersion(h.Metadata.K0sBinaryVersion); err == nil {
+				constraint, _ := semver.NewConstraint("<= 1.22.3+k0s.0")
+				if constraint.Check(version) && strings.Contains(out, "k0s cleanup operations done") {
+					return nil
+				}
 			}
 		}
 

@@ -5,6 +5,7 @@ import (
 
 	"github.com/k0sproject/k0sctl/pkg/apis/k0sctl.k0sproject.io/v1beta1"
 	"github.com/k0sproject/k0sctl/pkg/apis/k0sctl.k0sproject.io/v1beta1/cluster"
+	k0sctl_version "github.com/k0sproject/k0sctl/version"
 	"github.com/k0sproject/version"
 	log "github.com/sirupsen/logrus"
 )
@@ -54,7 +55,7 @@ func (p *DownloadK0s) Run() error {
 func (p *DownloadK0s) downloadK0s(h *cluster.Host) error {
 	targetVersion, err := version.NewVersion(p.Config.Spec.K0s.Version)
 	if err != nil {
-		return err
+		return k0sctl_version.Malformed(err)
 	}
 
 	log.Infof("%s: downloading k0s %s", h, targetVersion)

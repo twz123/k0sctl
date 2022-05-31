@@ -3,6 +3,7 @@ package phase
 import (
 	"fmt"
 
+	k0sctl_version "github.com/k0sproject/k0sctl/version"
 	"github.com/k0sproject/version"
 	log "github.com/sirupsen/logrus"
 )
@@ -41,12 +42,12 @@ func (p *ValidateFacts) validateDowngrade() error {
 
 	cfgV, err := version.NewVersion(p.Config.Spec.K0s.Version)
 	if err != nil {
-		return err
+		return k0sctl_version.Malformed(err)
 	}
 
 	runV, err := version.NewVersion(p.Config.Spec.K0sLeader().Metadata.K0sRunningVersion)
 	if err != nil {
-		return err
+		return k0sctl_version.Malformed(err)
 	}
 
 	if runV.GreaterThan(cfgV) {
@@ -69,12 +70,12 @@ func (p *ValidateFacts) validateDefaultVersion() error {
 
 	cfgV, err := version.NewVersion(p.Config.Spec.K0s.Version)
 	if err != nil {
-		return err
+		return k0sctl_version.Malformed(err)
 	}
 
 	runV, err := version.NewVersion(p.Config.Spec.K0sLeader().Metadata.K0sRunningVersion)
 	if err != nil {
-		return err
+		return k0sctl_version.Malformed(err)
 	}
 
 	// Upgrading should not be performed if the config version was defaulted

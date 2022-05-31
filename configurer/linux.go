@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/alessio/shellescape"
+	k0sctl_version "github.com/k0sproject/k0sctl/version"
 	"github.com/k0sproject/rig/exec"
 	"github.com/k0sproject/rig/os"
 	"github.com/k0sproject/version"
@@ -71,7 +72,7 @@ func (l Linux) K0sBinaryVersion(h os.Host) (*version.Version, error) {
 
 	version, err := version.NewVersion(output)
 	if err != nil {
-		return nil, err
+		return nil, k0sctl_version.Malformed(err)
 	}
 
 	return version, nil

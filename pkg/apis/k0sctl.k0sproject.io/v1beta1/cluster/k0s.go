@@ -14,7 +14,7 @@ import (
 	"github.com/creasty/defaults"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/k0sproject/dig"
-	k0sctl "github.com/k0sproject/k0sctl/version"
+	k0sctl_version "github.com/k0sproject/k0sctl/version"
 	"github.com/k0sproject/rig/exec"
 	"github.com/k0sproject/version"
 	"gopkg.in/yaml.v2"
@@ -59,12 +59,12 @@ func validateVersion(value interface{}) error {
 
 	v, err := version.NewVersion(vs)
 	if err != nil {
-		return err
+		return k0sctl_version.Malformed(err)
 	}
 
 	min, err := version.NewVersion(K0sMinVersion)
 	if err != nil {
-		return fmt.Errorf("internal error: k0sminversion can't be parsed: %s", err)
+		return fmt.Errorf("internal error: k0sminversion can't be parsed: %w", k0sctl_version.Malformed(err))
 	}
 
 	if v.LessThan(min) {
@@ -93,7 +93,7 @@ func (k *K0s) validateMinDynamic() func(interface{}) error {
 		}
 		v, err := semver.NewVersion(k.Version)
 		if err != nil {
-			return fmt.Errorf("failed to parse k0s version: %w", err)
+			return fmt.Errorf("failed to parse k0s version: %w", k0sctl_version.Malformed(err))
 		}
 		dynamicSince, _ := semver.NewVersion(k0sDynamicSince)
 		if v.LessThan(dynamicSince) {
@@ -109,7 +109,7 @@ func (k *K0s) SetDefaults() {
 		return
 	}
 
-	latest, err := version.LatestByPrerelease(k0sctl.IsPre() || k0sctl.Version == "0.0.0")
+	latest, err := version.LatestByPrerelease(k0sctl_version.IsPre() || k0sctl_version.Version == "0.0.0")
 	if err == nil {
 		k.Version = latest.String()
 		k.Metadata.VersionDefaulted = true
