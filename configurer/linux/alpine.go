@@ -1,12 +1,9 @@
 package linux
 
 import (
-	"strings"
-
 	"github.com/k0sproject/k0sctl/configurer"
 	"github.com/k0sproject/rig"
-	"github.com/k0sproject/rig/exec"
-	"github.com/k0sproject/rig/os"
+	"github.com/k0sproject/rig/os/linux"
 	"github.com/k0sproject/rig/os/registry"
 )
 
@@ -17,7 +14,7 @@ type BaseLinux struct {
 
 // Alpine provides OS support for Alpine Linux
 type Alpine struct {
-	os.Linux
+	linux.Alpine
 	BaseLinux
 }
 
@@ -32,13 +29,4 @@ func init() {
 			return linuxType
 		},
 	)
-}
-
-// InstallPackage installs packages via slackpkg
-func (l Alpine) InstallPackage(h os.Host, pkg ...string) error {
-	return h.Execf("apk add --update %s", strings.Join(pkg, " "), exec.Sudo(h))
-}
-
-func (l Alpine) Prepare(h os.Host) error {
-	return l.InstallPackage(h, "findutils", "coreutils")
 }
